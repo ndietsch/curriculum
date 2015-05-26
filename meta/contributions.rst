@@ -197,5 +197,8 @@ Hugo Landau <hlandau@devever.net>
 Konark Modi <modi.konark@gmail.com>                 MakeMyTrip.com
 Josh Reichardt <josh.reichardt@gmail.com>           thepracticalsysadmin.com
 Ben Reichert <ben@benreichert.com>
-Simon Aronsson <simon.aronsson@gmail.com>           
+Simon Aronsson <simon.aronsson@gmail.com>
+Andrew Langhorn <andrew@ajlanghorn.com>
+Abubakr-Sadik Nii Nai Davis <dwa2pac@gmail.com>
+Mike Julian
 ==================================================  ====================================

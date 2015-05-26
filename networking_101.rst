@@ -10,9 +10,9 @@ model in more detail as it applies to the role of systems administration.
 
 Before any discussion of networking, however, it's important to have a
 working knowledge of the numbered Request for Comments (:term:`RFC`) documents
-and how they apply to computer networking. These documents describe the
-mechanisms for the OSI layer implementations (e.g. TCP, IP, HTTP, SMTP)
-and as such are the authoritative source for how computers communicate
+and how they apply to computer networking. These documents describe the technical
+specifics for every protocol you will run into (eg, TCP, IP, HTTP, SMTP), and
+as such are the authoritative source for how computers communicate
 with one another.
 
 The RFC Documents
@@ -82,7 +82,11 @@ a set of open interconnection standards, which became known as the "Open Systems
 Interconnection" (OSI) standard. While the actual protocols they developed did
 not become popular and are not in wide use today, the model they came up with
 has achieved wide popularity as a way of thinking about the network protocol
-stack.
+stack. It's important to understand that the OSI model is a conceptual model,
+and therefore more of a mental framework than a technical framework. It is useful
+primarily for troubleshooting and explanation purposes. While the OSI model may
+seem esoteric as you're learning it, it will eventually prove invaluable to your
+daily work once you have a grasp of the concepts.
 
 The OSI model describes seven layers of abstraction that enable software
 programs to communicate with each other on separate systems. The seven layers
@@ -231,7 +235,22 @@ covered in later sections.
 IPv6
 ----
 
+The Internet has experienced tremendous growth from its beginnings in research
+at universities to its use in ecommerce and other applications today.
+As a result, more and more IPv4 addresses were given out to enable users to connect
+to the Internet.
+However, despite the number of IPv4 addresses being a large number (4294967296), they
+are slowly running out.
 
+Internet Protocol Version 6 (IPv6) is the latest version of the Internet protocol
+which aims to address the IPv4 address exhaustion problem.
+
+Probably the most obvious difference of IPv6 to IPv4 is the representation of addresses.
+Unlike IPV4, IPv6 uses a hexadecimal format to represent a 128-bit address. The format is
+grouped into 8 hextets separated by a colon.
+For example: 
+
+    3341:1112:AAAA:0001:4321:5876:CBAD:1234
 
 TCP vs UDP
 ==========
@@ -279,12 +298,12 @@ Subnetting, netmasks and CIDR
 A subnet is a logical division of an IP network, and allows the host system to
 identify which other hosts can be reached on the local network. The host system
 determines this by the application of a routing prefix. There are two typical
-representations of this prefix: a netmask and CIDR.
+representations of this prefix: a netmask and Classless Inter-Domain Routing (CIDR).
 
 Netmasks typically appear in the dotted decimal notation, with values between
 0-255 in each octet. These are applied as bitmasks, and numbers at 255 mean that
 this host is not reachable. Netmask can also be referred to as a Subnet Mask and
-these terms are often used interchangeably. An example IP Address with a typical
+these terms are often used interchangeably. An example IPv4 address with a typical
 netmask is below:
 
 ============= ===============
@@ -294,14 +313,36 @@ IP Address    Netmask
 ============= ===============
 
 CIDR notation is a two-digit representation of this routing prefix. Its value can range
-between 0 and 32. This representation is typically used for networking equipment. Below
-is the same example as above with CIDR notation:
+between 0 and 32. While having long been a staple in network equipment and used mainly by
+network engineers, CIDR notation can now be found in Linux (iproute's `ip` command uses
+CIDR notation). In addition, CIDR notation is often encountered in discussions, as it's
+quicker and simpler to reference than a netmask. Below is the same example as above
+with CIDR notation:
 
 ============= ===============
 IP Address    CIDR
 ============= ===============
 192.168.1.1   /24
 ============= ===============
+
+As a server administrator, it is helpful to understand subnetting so as to communicate more
+effectively with network engineers, and to design networks yourself. There are many guides
+online for learning how to subnet, each with different approaches and tricks. A full subnetting
+guide is out of the scope of this document.
+
+Classful addressing
+===================
+
+You may hear people refer to networks as "Class A", "Class B", or "Class C". This is known
+as "Classful Addressing" and has been deprecated for decades, thanks to the introduction
+of CIDR in 1993 (:rfc:`1519`). Classful addressing has the drawback of assuming that a
+network is drawn on very large boundaries. For example, in the table in the next section,
+each block would be a single network. One can see how using an entire /16 (65534 hosts)
+when only five hosts are needed would be wasteful. As such, CIDR was created, allowing
+people to create subnets only as large as required. For these reasons, one should not refer
+to any particular network block as a "Class X" (eg, 10.0.0.0/28 should not be called a Class A
+network) as it is misleading at best, and incorrect at worst. You should always use CIDR
+notation to ensure accuracy.
 
 Private address space (:rfc:`1918`)
 ===================================
@@ -326,6 +367,48 @@ Static routing
 NAT
 ===
 
+Network Address Translation, or NAT, is a technology that allows multiple
+internet-connected devices to share one common **public** IP address, while
+still retaining unique, individual **private** IP addresses. The distinction
+between public and private is integral to the understanding of the service
+that NAT provides and how it works.
+
+In our :ref:`Sample Network <sample-network>` we can see that two firewall
+machines sit between the Internet and the other hosts in the network; traffic
+going in and out of the network will pass through these firewall machines. The
+addresses assigned to the firewalls (10.10.10.1 and 10.10.10.2) are private IPs
+and are visible to just the hosts within the network. A device on the external
+Internet will, instead, see the public IP address for each firewall. It's
+important to note that none of the hosts within the network will have a public
+IP address, except for the firewalls and the DNS servers, since they are the
+only parts of the network that directly communicate with the external Internet.
+
+When a device behind a NAT-enabled router sends a packet, the source IP address
+on the packet is the device's local, private IP address. If the packet is going
+outside the local network, it will pass through a router, which will modify the
+source IP address to its own public IP address. When a response for the packet
+is received by the router, it needs to ensure that the response can be forwarded
+to the host that sent the packet in the first place. To do this, the router
+maintains a **Translation Table**. This table maps a device's IP address and
+port to a port on the router itself. The router's public IP address and
+the correct port number from the table are used as the source IP and port on
+the packet and then sent to the destination.
+
+These maps are temporary and exist on a per-connection basis. This means that each
+connection opened by a device will have a unique port number on the device and a
+unique port number on the router as well. This port on the router is used as the
+public port for that connection. Once the connection terminates, the router is
+free to assign that port to another connection. However, the total number of
+available ports is limited to 65,536, so it is entirely possible that a router
+has no more free ports and cannot assign a new NAT address. This is commonly
+referred to as port exhaustion.
+
+Similar to port exhaustion, timeouts can also affect the router's ability to
+assign new NAT addresses. Each entry in the translation table has a timeout
+value which refers to the amount of time for which that entry can remain
+inactive and still keep its place in the table. An entry that has remained
+inactive for a period of time longer than the timeout will automatically be
+removed, freeing up space for a new one.
 
 Networking cable
 ================
